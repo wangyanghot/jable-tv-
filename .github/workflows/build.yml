@@ -15,16 +15,20 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build with Gradle
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew || true
+
+    - name: Build Debug APK
       run: |
-        echo "include ':app'" > settings.gradle
-        echo "rootProject.name = 'JableTV'" >> settings.gradle
-        mkdir -p app
-        echo "apply plugin: 'com.android.application'" > app/build.gradle
-        echo "android { namespace 'com.example.jabletv'; compileSdk 34; defaultConfig { applicationId 'com.example.jabletv'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0'; } }" >> app/build.gradle
-        chmod +x gradlew || true
-        gradle wrapper
-        ./gradlew assembleDebug
+        if [ -f "gradlew" ]; then
+          ./gradlew assembleDebug
+        else
+          gradle wrapper
+          ./gradlew assembleDebug
+        fi
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
