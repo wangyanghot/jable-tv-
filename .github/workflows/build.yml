@@ -29,8 +29,8 @@ jobs:
 
         yes | sdkmanager --licenses > /dev/null 2>&1
 
-        # 安装 SDK 组件
-        sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.1" > /dev/null
+        # 安装 SDK 34 组件
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
 
         echo "sdk.dir=$ANDROID_HOME" > local.properties
 
@@ -50,14 +50,14 @@ jobs:
         curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradlew -o gradlew
         chmod +x gradlew
 
-        # 3. 关键修复：自动生成 gradle.properties 开启 AndroidX 和 Jetifier 属性！
+        # 3. 生成 gradle.properties 开启 AndroidX
         cat << 'EOF' > gradle.properties
         android.useAndroidX=true
         android.enableJetifier=true
         org.gradle.jvmargs=-Xmx2048m
         EOF
 
-        # 4. 生成根目录 build.gradle
+        # 4. 生成根目录 build.gradle（将 AGP 升级到 8.2.0，完美支持 SDK 34）
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -65,7 +65,7 @@ jobs:
                 mavenCentral()
             }
             dependencies {
-                classpath 'com.android.tools.build:gradle:8.1.0'
+                classpath 'com.android.tools.build:gradle:8.2.0'
                 classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22'
             }
         }
@@ -100,18 +100,18 @@ jobs:
         }
         EOF
 
-        # 8. 生成 app/build.gradle
+        # 8. 生成 app/build.gradle（使用 compileSdk 34）
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         apply plugin: 'kotlin-android'
 
         android {
             namespace 'com.example.jabletv'
-            compileSdk 33
+            compileSdk 34
             defaultConfig {
                 applicationId "com.example.jabletv"
                 minSdk 24
-                targetSdk 33
+                targetSdk 34
                 versionCode 1
                 versionName "1.0"
             }
