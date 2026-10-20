@@ -15,12 +15,31 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Force Configure Gradle 8.0 & Build
+    - name: Setup Android SDK & Build
       run: |
-        # 1. 彻底清空所有旧的编译文件
+        # 1. 自动下载并安装 Android SDK Command-line Tools
+        echo "Installing Android SDK..."
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
+        mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+        
+        # 配置环境变量
+        export ANDROID_HOME=$HOME/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+        # 自动接受 SDK 协议授权
+        yes | sdkmanager --licenses > /dev/null 2>&1
+
+        # 安装编译 Android 34 所需的 SDK 组件
+        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+        # 写入 local.properties 告诉 Gradle SDK 的位置
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+        # 2. 清理旧编译缓存并写死 Gradle 8.0 配置
         rm -rf gradlew gradlew.bat gradle/ .gradle/ app/build/
 
-        # 2. 手动创建并写死 Gradle 8.0 配置
         mkdir -p gradle/wrapper
         cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
         distributionBase=GRADLE_USER_HOME
@@ -63,7 +82,7 @@ jobs:
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
 
-        # 6. 自动生成 MainActivity.kt 核心代码文件
+        # 6. 生成 MainActivity.kt
         cat << 'EOF' > app/src/main/java/com/example/jabletv/MainActivity.kt
         package com.example.jabletv
 
@@ -134,8 +153,9 @@ jobs:
         </manifest>
         EOF
 
-        # 9. 执行编译打包（加上 --stacktrace 强制打印详细错误堆栈）
-        ./gradlew assembleDebug --stacktrace
+        # 9. 正式开始编译打包
+        export ANDROID_HOME=$HOME/android-sdk
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
