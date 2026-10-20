@@ -1,13 +1,33 @@
 name: Build Android APK
+
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
+
+    - name: Build with Gradle
+      run: |
+        echo "include ':app'" > settings.gradle
+        echo "rootProject.name = 'JableTV'" >> settings.gradle
+        mkdir -p app
+        echo "apply plugin: 'com.android.application'" > app/build.gradle
+        echo "android { namespace 'com.example.jabletv'; compileSdk 34; defaultConfig { applicationId 'com.example.jabletv'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0'; } }" >> app/build.gradle
+        chmod +x gradlew || true
+        gradle wrapper
+        ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: jable-tv-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
