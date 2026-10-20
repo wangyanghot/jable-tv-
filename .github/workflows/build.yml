@@ -1,4 +1,4 @@
-bug/app-debug.apname: Build Android TV APK
+name: Build Android TV APK
 
 on: [push]
 
