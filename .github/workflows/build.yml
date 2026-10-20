@@ -15,12 +15,27 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Auto Generate & Build APK
+    - name: Force Configure Gradle 8.0 & Build
       run: |
-        # 1. 彻底清理旧的 Gradle 缓存和 wrapper 文件，防止版本冲突
-        rm -rf gradlew gradlew.bat gradle/ .gradle/
+        # 1. 彻底清空所有旧的编译文件
+        rm -rf gradlew gradlew.bat gradle/ .gradle/ app/build/
 
-        # 2. 自动在根目录生成 build.gradle
+        # 2. 手动创建并写死 Gradle 8.0 的配置，彻底杜绝 4.4.1 老版本！
+        mkdir -p gradle/wrapper
+        cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
+        distributionBase=GRADLE_USER_HOME
+        distributionPath=wrapper/dists
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
+        zipStoreBase=GRADLE_USER_HOME
+        zipStorePath=wrapper/dists
+        EOF
+
+        # 3. 直接从官方拉取标准 wrapper 启动脚本和 jar 包
+        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradlew -o gradlew
+        chmod +x gradlew
+
+        # 4. 生成根目录 build.gradle
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -40,11 +55,11 @@ jobs:
         }
         EOF
 
-        # 3. 生成 settings.gradle
+        # 5. 生成 settings.gradle
         echo "include ':app'" > settings.gradle
         echo "rootProject.name = 'JableTV'" >> settings.gradle
 
-        # 4. 创建 app 目录及 build.gradle
+        # 6. 创建 app 目录及子模块配置
         mkdir -p app/src/main/java/com/example/jabletv
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
@@ -78,7 +93,7 @@ jobs:
         }
         EOF
 
-        # 5. 生成 AndroidManifest.xml
+        # 7. 生成清单文件
         if [ ! -f "app/src/main/AndroidManifest.xml" ]; then
           cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -107,12 +122,7 @@ jobs:
         EOF
         fi
 
-        # 6. 安装系统 Gradle，并强制用 8.0 版本生成全新的 wrapper
-        sudo apt-get update && sudo apt-get install -y gradle
-        gradle wrapper --gradle-version 8.0 --distribution-type all
-        chmod +x gradlew
-
-        # 7. 开始编译打包
+        # 8. 开始执行编译打包
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
