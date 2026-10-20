@@ -17,7 +17,10 @@ jobs:
 
     - name: Auto Generate & Build APK
       run: |
-        # 1. 自动在根目录生成包含 Android 编译插件声明的 build.gradle（关键修复点！）
+        # 1. 彻底清理旧的 Gradle 缓存和 wrapper 文件，防止版本冲突
+        rm -rf gradlew gradlew.bat gradle/ .gradle/
+
+        # 2. 自动在根目录生成 build.gradle
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -37,16 +40,15 @@ jobs:
         }
         EOF
 
-        # 2. 自动生成 settings.gradle
+        # 3. 生成 settings.gradle
         echo "include ':app'" > settings.gradle
         echo "rootProject.name = 'JableTV'" >> settings.gradle
 
-        # 3. 自动补齐标准的 app 子模块结构
+        # 4. 创建 app 目录及 build.gradle
         mkdir -p app/src/main/java/com/example/jabletv
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
 
-        # 4. 自动生成 app/build.gradle
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         apply plugin: 'kotlin-android'
@@ -76,7 +78,7 @@ jobs:
         }
         EOF
 
-        # 5. 如果没有清单文件则自动生成一个支持 TV 的 Manifest
+        # 5. 生成 AndroidManifest.xml
         if [ ! -f "app/src/main/AndroidManifest.xml" ]; then
           cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -105,10 +107,12 @@ jobs:
         EOF
         fi
 
-        # 6. 安装 Gradle 并开始编译打包
+        # 6. 安装系统 Gradle，并强制用 8.0 版本生成全新的 wrapper
         sudo apt-get update && sudo apt-get install -y gradle
-        gradle wrapper --gradle-version 8.0
+        gradle wrapper --gradle-version 8.0 --distribution-type all
         chmod +x gradlew
+
+        # 7. 开始编译打包
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
