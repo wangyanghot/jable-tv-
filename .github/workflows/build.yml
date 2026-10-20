@@ -34,20 +34,20 @@ jobs:
 
         echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-        # 2. 清理旧编译缓存并写死 Gradle 8.0 配置
+        # 2. 清理旧编译缓存并写死 Gradle 8.2 配置（匹配 AGP 8.2.0）
         rm -rf gradlew gradlew.bat gradle/ .gradle/ app/build/
 
         mkdir -p gradle/wrapper
         cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
         distributionBase=GRADLE_USER_HOME
         distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-8.0-bin.zip
+        distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
         zipStoreBase=GRADLE_USER_HOME
         zipStorePath=wrapper/dists
         EOF
 
-        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradlew -o gradlew
+        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+        curl -s https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradlew -o gradlew
         chmod +x gradlew
 
         # 3. 生成 gradle.properties 开启 AndroidX
@@ -57,7 +57,7 @@ jobs:
         org.gradle.jvmargs=-Xmx2048m
         EOF
 
-        # 4. 生成根目录 build.gradle（将 AGP 升级到 8.2.0，完美支持 SDK 34）
+        # 4. 生成根目录 build.gradle（AGP 8.2.0）
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -100,7 +100,7 @@ jobs:
         }
         EOF
 
-        # 8. 生成 app/build.gradle（使用 compileSdk 34）
+        # 8. 生成 app/build.gradle
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         apply plugin: 'kotlin-android'
