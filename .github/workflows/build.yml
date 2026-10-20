@@ -20,7 +20,7 @@ jobs:
         # 1. 彻底清空所有旧的编译文件
         rm -rf gradlew gradlew.bat gradle/ .gradle/ app/build/
 
-        # 2. 手动创建并写死 Gradle 8.0 的配置，彻底杜绝 4.4.1 老版本！
+        # 2. 手动创建并写死 Gradle 8.0 配置
         mkdir -p gradle/wrapper
         cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
         distributionBase=GRADLE_USER_HOME
@@ -30,12 +30,11 @@ jobs:
         zipStorePath=wrapper/dists
         EOF
 
-        # 3. 直接从官方拉取标准 wrapper 启动脚本和 jar 包
         curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
         curl -s https://raw.githubusercontent.com/gradle/gradle/v8.0.0/gradlew -o gradlew
         chmod +x gradlew
 
-        # 4. 生成根目录 build.gradle
+        # 3. 生成根目录 build.gradle
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -55,15 +54,30 @@ jobs:
         }
         EOF
 
-        # 5. 生成 settings.gradle
+        # 4. 生成 settings.gradle
         echo "include ':app'" > settings.gradle
         echo "rootProject.name = 'JableTV'" >> settings.gradle
 
-        # 6. 创建 app 目录及子模块配置
+        # 5. 创建 app 目录及源码
         mkdir -p app/src/main/java/com/example/jabletv
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
 
+        # 6. 自动生成 MainActivity.kt 核心代码文件！
+        cat << 'EOF' > app/src/main/java/com/example/jabletv/MainActivity.kt
+        package com.example.jabletv
+
+        import android.os.Bundle
+        import androidx.appcompat.app.AppCompatActivity
+
+        class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+            }
+        }
+        EOF
+
+        # 7. 生成 app/build.gradle
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         apply plugin: 'kotlin-android'
@@ -93,9 +107,8 @@ jobs:
         }
         EOF
 
-        # 7. 生成清单文件
-        if [ ! -f "app/src/main/AndroidManifest.xml" ]; then
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
+        # 8. 生成清单文件
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.example.jabletv">
             <uses-permission android:name="android.permission.INTERNET" />
@@ -120,9 +133,8 @@ jobs:
             </application>
         </manifest>
         EOF
-        fi
 
-        # 8. 开始执行编译打包
+        # 9. 执行编译打包
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
