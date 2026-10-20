@@ -1,4 +1,4 @@
-name: Build Android TV APK
+bug/app-debug.apname: Build Android TV APK
 
 on: [push]
 
@@ -130,7 +130,7 @@ jobs:
         }
         EOF
 
-        # 9. 生成清单文件
+        # 9. 生成清单文件（已彻底清除未创建的 icon 引用，杜绝资源找不到报错）
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.example.jabletv">
@@ -139,9 +139,7 @@ jobs:
             <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
             <application
                 android:allowBackup="true"
-                android:icon="@mipmap/ic_launcher"
                 android:label="JableTV"
-                android:roundIcon="@mipmap/ic_launcher_round"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.NoActionBar">
                 <activity
