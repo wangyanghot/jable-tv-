@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android TV APK
 
 on: [push]
 
@@ -15,18 +15,83 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Gradle
-      run: sudo apt-get update && sudo apt-get install -y gradle
-
-    - name: Generate Gradle Wrapper
+    - name: Auto Generate & Build APK
       run: |
+        # 1. 自动补齐标准的 Android 项目源码目录结构
+        mkdir -p app/src/main/java/com/example/jabletv
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/layout
+
+        # 2. 如果之前没写过 AndroidManifest.xml，自动生成一个支持 TV 的清单文件
+        if [ ! -f "app/src/main/AndroidManifest.xml" ]; then
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.example.jabletv">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-feature android:name="android.software.leanback" android:required="false" />
+            <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+            <application
+                android:allowBackup="true"
+                android:icon="@mipmap/ic_launcher"
+                android:label="JableTV"
+                android:roundIcon="@mipmap/ic_launcher_round"
+                android:supportsRtl="true"
+                android:theme="@style/Theme.AppCompat.NoActionBar">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+        fi
+
+        # 3. 自动补齐根目录 settings.gradle
+        echo "include ':app'" > settings.gradle
+        echo "rootProject.name = 'JableTV'" >> settings.gradle
+
+        # 4. 自动补齐 app/build.gradle
+        cat << 'EOF' > app/build.gradle
+        apply plugin: 'com.android.application'
+        apply plugin: 'kotlin-android'
+
+        android {
+            namespace 'com.example.jabletv'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.example.jabletv"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            kotlinOptions {
+                jvmTarget = '17'
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
+        }
+        EOF
+
+        # 5. 安装 Gradle 并开始编译打包
+        sudo apt-get update && sudo apt-get install -y gradle
         gradle wrapper --gradle-version 8.0
         chmod +x gradlew
+        ./gradlew assembleDebug
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
-
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: jable-tv-apk
