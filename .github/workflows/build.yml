@@ -24,17 +24,14 @@ jobs:
         unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
         mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
         
-        # 配置环境变量
         export ANDROID_HOME=$HOME/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
 
-        # 自动接受 SDK 协议授权
         yes | sdkmanager --licenses > /dev/null 2>&1
 
-        # 安装编译 Android 34 所需的 SDK 组件
-        sdkmanager --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+        # 安装兼容 compileSdk 33 的 SDK 组件
+        sdkmanager --install "platform-tools" "platforms;android-33" "build-tools;33.0.2" > /dev/null
 
-        # 写入 local.properties 告诉 Gradle SDK 的位置
         echo "sdk.dir=$ANDROID_HOME" > local.properties
 
         # 2. 清理旧编译缓存并写死 Gradle 8.0 配置
@@ -96,18 +93,18 @@ jobs:
         }
         EOF
 
-        # 7. 生成 app/build.gradle
+        # 7. 生成 app/build.gradle（将 compileSdk 和 targetSdk 改为兼容的 33）
         cat << 'EOF' > app/build.gradle
         apply plugin: 'com.android.application'
         apply plugin: 'kotlin-android'
 
         android {
             namespace 'com.example.jabletv'
-            compileSdk 34
+            compileSdk 33
             defaultConfig {
                 applicationId "com.example.jabletv"
                 minSdk 24
-                targetSdk 34
+                targetSdk 33
                 versionCode 1
                 versionName "1.0"
             }
@@ -153,7 +150,7 @@ jobs:
         </manifest>
         EOF
 
-        # 9. 正式开始编译打包
+        # 9. 开始编译打包
         export ANDROID_HOME=$HOME/android-sdk
         ./gradlew assembleDebug
 
